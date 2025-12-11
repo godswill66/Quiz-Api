@@ -1,35 +1,41 @@
-require('dotenv').config();
-require('express-async-errors');
-const express = require('express');
-const cors = require('cors');
-const connectDB = require('./config/db');
-const errorHandler = require('./middleware/errorHandler');
-
-
-const authRoutes = require('./routes/auth');
-const quizRoutes = require('./routes/quizzes');
-const questionRoutes = require('./routes/questions');
-const resultRoutes = require('./routes/results');
-
-
+require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
 const app = express();
-app.use(cors());
+
+// --- CRITICAL: Add middleware BEFORE your routes ---
+// Parse incoming JSON payloads (required for POST/PUT requests)
 app.use(express.json());
 
+// Connect to MongoDB
+console.log("Mongo URI being used:", process.env.MONGO_URI); // ADD THIS LINE
 
-app.use('/api/auth', authRoutes);
-app.use('/api/quizzes', quizRoutes);
-app.use('/api', questionRoutes); // contains nested question and question-id routes
-app.use('/api', resultRoutes);
+mongoose
+  .connect(process.env.MONGO_URI) // Use MONGO_URI to match your .env file
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.log("Mongo error:", err));
 
+// --- Define all your routes ---
+// Use paths relative to the server.js file location (within the 'src' folder)
 
-app.get('/', (req, res) => res.json({ message: 'Quiz API' }));
+// Note: I corrected the paths from `../src/routes/quizzes` to `./routes/quizzes` 
+// assuming server.js is inside the src folder.
 
+app.use("/api/results", require("./routes/results"));
+app.use("/api/answer", require("./routes/answer"));
+app.use("/api/questions", require("./routes/questions"));
 
-app.use(errorHandler);
+const quizRoutes = require("./routes/quizzes");
+app.use("/api/quizzes", quizRoutes);
 
+const authRoutes = require("./routes/auth");
+app.use("/api/auth", authRoutes);
 
-const PORT = process.env.PORT || 4000;
-connectDB(process.env.MONGO_URI || 'mongodb://localhost:27017/quizdb')
-.then(() => app.listen(PORT, () => console.log(`Server running on ${PORT}`)))
-.catch(err => console.error(err));
+// Test protected route
+const auth = require("./middleware/auth");
+app.get("/api/protected", auth, (req, res) => {
+  res.json({ message: "You are authenticated!", user: req.user });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

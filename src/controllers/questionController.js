@@ -1,65 +1,90 @@
-const Question = require('../models/Question');
-const Quiz = require('../models/Quiz');
-const Joi = require('joi');
-const validateObjectId = require('../utils/validateObjectId');
+const Question = require("../models/Question");
+const Quiz = require("../models/Quiz");
 
+exports.createQuestion = async (req, res) => {
+  try {
+    const { quizId } = req.params;
+    const { text, helpText } = req.body;
 
-const answerSchema = Joi.object({ text: Joi.string().required(), isCorrect: Joi.boolean().required() });
-const questionSchema = Joi.object({ text: Joi.string().required(), answers: Joi.array().items(answerSchema).min(2), points: Joi.number().min(0) });
+    // The validation check is handled by the middleware now!
+    // We can assume quizId is valid here.
 
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) return res.status(404).json({ message: "Quiz not found" });
 
-exports.addQuestion = async (req, res) => {
-const quizId = req.params.quizId;
-if (!validateObjectId(quizId)) return res.status(400).json({ message: 'Invalid quiz id' });
-const quiz = await Quiz.findById(quizId);
-if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
-if (!quiz.owner.equals(req.user._id) && req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
-const { error, value } = questionSchema.validate(req.body);
-if (error) return res.status(400).json({ message: error.message });
-const question = await Question.create({ ...value, quiz: quizId });
-res.status(201).json(question);
+    // Assuming 'auth' middleware provides req.user
+    if (quiz.user.toString() !== req.user._id.toString())
+      return res.status(403).json({ message: "Not allowed" });
+
+    const question = await Question.create({
+      quiz: quizId,
+      text,
+      helpText,
+    });
+
+    // Push into quiz.questions array
+    quiz.questions.push(question._id);
+    await quiz.save();
+
+    res.status(201).json({ message: "Question created", question });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 };
-
-
-exports.getQuestions = async (req, res) => {
-const quizId = req.params.quizId;
-if (!validateObjectId(quizId)) return res.status(400).json({ message: 'Invalid quiz id' });
-const questions = await Question.find({ quiz: quizId }).select('-answers.isCorrect');
-res.json(questions);
-};
-
-
-exports.getQuestionForEdit = async (req, res) => {
-// returns full question including correct flags (only owner/admin)
-const id = req.params.id;
-if (!validateObjectId(id)) return res.status(400).json({ message: 'Invalid id' });
-const question = await Question.findById(id).populate('quiz');
-if (!question) return res.status(404).json({ message: 'Question not found' });
-if (!question.quiz.owner.equals(req.user._id) && req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
-res.json(question);
-};
-
 
 exports.updateQuestion = async (req, res) => {
-const id = req.params.id;
-if (!validateObjectId(id)) return res.status(400).json({ message: 'Invalid id' });
-const question = await Question.findById(id).populate('quiz');
-if (!question) return res.status(404).json({ message: 'Question not found' });
-if (!question.quiz.owner.equals(req.user._id) && req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
-const { error, value } = questionSchema.validate(req.body);
-if (error) return res.status(400).json({ message: error.message });
-Object.assign(question, value);
-await question.save();
-res.json(question);
+  try {
+    const { id } = req.params;
+    const { text, helpText } = req.body;
+
+    const question = await Question.findById(id).populate("quiz");
+    if (!question)
+      return res.status(404).json({ message: "Question not found" });
+
+    if (question.quiz.user.toString() !== req.user._id.toString())
+      return res.status(403).json({ message: "Not allowed" });
+
+    if (text) question.text = text;
+    if (helpText) question.helpText = helpText;
+
+    await question.save();
+    res.json({ message: "Question updated", question });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 };
 
-
 exports.deleteQuestion = async (req, res) => {
-const id = req.params.id;
-if (!validateObjectId(id)) return res.status(400).json({ message: 'Invalid id' });
-const question = await Question.findById(id).populate('quiz');
-if (!question) return res.status(404).json({ message: 'Question not found' });
-if (!question.quiz.owner.equals(req.user._id) && req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
-await question.remove();
-res.json({ message: 'Deleted' });
+  try {
+    const { id } = req.params;
+
+    const question = await Question.findById(id).populate("quiz");
+    if (!question)
+      return res.status(404).json({ message: "Question not found" });
+
+    if (question.quiz.user.toString() !== req.user._id.toString())
+      return res.status(403).json({ message: "Not allowed" });
+
+    await question.deleteOne();
+
+    res.json({ message: "Question deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+exports.addAnswer = async (req, res) => {
+  // Add your logic for adding an answer here.
+  res.status(501).json({ message: "Not Implemented Yet" });
+};
+
+exports.updateAnswer = async (req, res) => {
+  // This is the function causing the error right now.
+  // Add your logic for updating an answer here.
+  res.status(501).json({ message: "Not Implemented Yet" });
+};
+
+exports.deleteAnswer = async (req, res) => {
+  // Add your logic for deleting an answer here.
+  res.status(501).json({ message: "Not Implemented Yet" });
 };

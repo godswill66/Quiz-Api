@@ -1,13 +1,14 @@
-const express = require('express');
-const router = express.Router({ mergeParams: true });
-const ctrl = require('../controllers/resultController');
-const auth = require('../middleware/auth');
+const router = require("express").Router();
+const auth = require("../middleware/auth");
+const resultCtrl = require("../controllers/resultController");
 
+// Submit quiz
+router.post("/:quizId/submit", auth, resultCtrl.submitQuiz);
 
-router.use(auth);
-router.post('/:quizId/attempts', ctrl.submitAttempt);
-router.get('/mine', ctrl.getUserResults);
-router.get('/:quizId/results', ctrl.getQuizResults);
+// Get user's results
+ router.get("/", auth, resultCtrl.getUserResults);
 
+// Get results for a single quiz
+router.get("/:quizId", auth, resultCtrl.getQuizResults);
 
 module.exports = router;

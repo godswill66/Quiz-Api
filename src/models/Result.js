@@ -1,13 +1,27 @@
-const mongoose = require('mongoose');
+const scoringService = require("../services/scoringService");
+const Result = require("../models/Result");
 
+exports.submitQuiz = async (req, res) => {
+  try {
+    const { quizId } = req.params;
+    const submittedAnswers = req.body.answers;
 
-const attemptSchema = new mongoose.Schema({
-user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-quiz: { type: mongoose.Schema.Types.ObjectId, ref: 'Quiz', required: true },
-totalPoints: { type: Number, required: true },
-achievedPoints: { type: Number, required: true },
-answers: [{ question: mongoose.Schema.Types.ObjectId, answerIndex: Number }],
-}, { timestamps: true });
+    const scoreData = await scoringService.calculateScore(
+      quizId,
+      submittedAnswers
+    );
 
+    const savedResult = await Result.create({
+      quiz: quizId,
+      user: req.user._id,
+      ...scoreData,
+    });
 
-module.exports = mongoose.model('Result', attemptSchema);
+    res.status(201).json({
+      message: "Quiz submitted successfully",
+      result: savedResult,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};

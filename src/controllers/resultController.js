@@ -1,62 +1,117 @@
-const Question = require('../models/Question');
-const Quiz = require('../models/Quiz');
-const Result = require('../models/Result');
-const Joi = require('joi');
-const validateObjectId = require('../utils/validateObjectId');
+const Result = require("../models/Result");
+const Question = require("../models/Question");
+const Quiz = require("../models/Quiz");
+const mongoose = require("mongoose");
 
+// Submit quiz
+exports.submitQuiz = async (req, res) => {
+  try {
+    const { quizId, answers } = req.body;
 
-const attemptSchema = Joi.object({ answers: Joi.array().items(Joi.object({ question: Joi.string().required(), answerIndex: Joi.number().required() })) });
+    if (!mongoose.isValidObjectId(quizId)) {
+      return res.status(400).json({ message: "Invalid quizId" });
+    }
 
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) return res.status(404).json({ message: "Quiz not found" });
 
-exports.submitAttempt = async (req, res) => {
-const quizId = req.params.quizId;
-if (!validateObjectId(quizId)) return res.status(400).json({ message: 'Invalid quiz id' });
-const { error, value } = attemptSchema.validate(req.body);
-if (error) return res.status(400).json({ message: error.message });
-const quiz = await Quiz.findById(quizId);
-if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
-if (!quiz.isPublished) return res.status(403).json({ message: 'Quiz not published' });
+    // Fetch all questions
+    const questionIds = answers.map((a) => a.questionId);
+    const allQuestions = await Question.find({ _id: { $in: questionIds } });
 
+    let totalQuestions = allQuestions.length;
+    let totalCorrect = 0;
+    let totalAnswered = 0;
 
-// Load questions
-const questionIds = value.answers.map(a => a.question);
-const questions = await Question.find({ _id: { $in: questionIds } });
-// score
-let totalPoints = 0;
-let achievedPoints = 0;
-const answerRecords = [];
+    for (const answer of answers) {
+      const question = allQuestions.find(
+        (q) => q._id.toString() === answer.questionId
+      );
+      if (!question) continue;
 
+      if (answer.selectedAnswers?.length > 0) totalAnswered++;
 
-for (const q of questions) {
-totalPoints += q.points || 1;
-const provided = value.answers.find(a => a.question === String(q._id));
-if (!provided) continue;
-const idx = provided.answerIndex;
-const chosen = q.answers[idx];
-if (!chosen) continue; // invalid index
-answerRecords.push({ question: q._id, answerIndex: idx });
-if (chosen.isCorrect) achievedPoints += q.points || 1;
-}
+      const correct = question.answers
+        .filter((a) => a.isCorrect)
+        .map((a) => a.text)
+        .sort();
 
+      const selected = (answer.selectedAnswers || []).sort();
 
-const result = await Result.create({ user: req.user._id, quiz: quizId, totalPoints, achievedPoints, answers: answerRecords });
-res.status(201).json({ resultId: result._id, totalPoints, achievedPoints });
+      if (JSON.stringify(correct) === JSON.stringify(selected)) {
+        totalCorrect++;
+      }
+    }
+
+    const scorePercentage = (totalCorrect / totalQuestions) * 100;
+
+    let grade =
+      scorePercentage >= 90
+        ? "A"
+        : scorePercentage >= 75
+        ? "B"
+        : scorePercentage >= 60
+        ? "C"
+        : scorePercentage >= 50
+        ? "D"
+        : "F";
+
+    const result = await Result.create({
+      quiz: quizId,
+      user: req.user._id,
+      answers,
+      score: scorePercentage,
+      grade,
+    });
+
+    res.json({
+      message: "Quiz submitted",
+      result,
+      total_questions: totalQuestions,
+      answered: totalAnswered,
+      correct: totalCorrect,
+      score_percentage: scorePercentage,
+      grade,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 };
 
-
+// ------------------------------
+// Get all results for logged-in user
+// ------------------------------
 exports.getUserResults = async (req, res) => {
-const results = await Result.find({ user: req.user._id }).populate('quiz', 'title');
-res.json(results);
+  try {
+    const results = await Result.find({ user: req.user._id }).populate(
+      "quiz",
+      "title description"
+    );
+
+    res.json({ results });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 };
 
-
+// ------------------------------
+// Get results for a single quiz
+// ------------------------------
 exports.getQuizResults = async (req, res) => {
-// only owner or admin
-const quizId = req.params.quizId;
-if (!validateObjectId(quizId)) return res.status(400).json({ message: 'Invalid quiz id' });
-const quiz = await Quiz.findById(quizId);
-if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
-if (!quiz.owner.equals(req.user._id) && req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
-const results = await Result.find({ quiz: quizId }).populate('user', 'name email');
-res.json(results);
+  try {
+    const { quizId } = req.params;
+
+    if (!mongoose.isValidObjectId(quizId)) {
+      return res.status(400).json({ message: "Invalid quizId" });
+    }
+
+    const results = await Result.find({
+      quiz: quizId,
+      user: req.user._id,
+    });
+
+    res.json({ results });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 };
