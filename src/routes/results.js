@@ -1,7 +1,7 @@
 // Import the Router module from Express
 const router = require("express").Router();
 // Import the authentication middleware
-const auth = require("../middleware/auth");
+const auth = require("../middleware/authMiddleware");
 // Import the controller functions for handling result logic
 const resultCtrl = require("../controllers/resultController");
 // Note: Consider importing the validateObjectId middleware here for :quizId params

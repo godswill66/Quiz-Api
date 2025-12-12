@@ -5,7 +5,7 @@ const router = express.Router();
 // Import the controller functions for handling answer logic
 const answerCtrl = require("../controllers/answerController");
 // Import the authentication middleware to protect routes
-const auth = require("../middleware/auth");
+const auth = require("../middleware/authMiddleware");
 // Import the middleware to validate MongoDB Object IDs in parameters
 const validateObjectId = require("../utils/validateObjectId");
 
@@ -15,10 +15,10 @@ const validateObjectId = require("../utils/validateObjectId");
  * @access  Private
  */
 router.post(
-  "/:questionId", 
-  auth,               // 1. Authenticate user
-  validateObjectId,   // 2. Validate the :questionId format
-  answerCtrl.addAnswer// 3. Execute the controller logic
+  "/:questionId",
+  auth, // 1. Authenticate user
+  validateObjectId, // 2. Validate the :questionId format
+  answerCtrl.addAnswer // 3. Execute the controller logic
 );
 
 /**
@@ -27,10 +27,10 @@ router.post(
  * @access  Private
  */
 router.put(
-  "/:questionId/:answerId", 
-  auth,               // 1. Authenticate user
-  validateObjectId,   // 2. Validate both :questionId and :answerId formats
-  answerCtrl.updateAnswer// 3. Execute the controller logic
+  "/:questionId/:answerId",
+  auth, // 1. Authenticate user
+  validateObjectId, // 2. Validate both :questionId and :answerId formats
+  answerCtrl.updateAnswer // 3. Execute the controller logic
 );
 
 /**
@@ -39,10 +39,10 @@ router.put(
  * @access  Private
  */
 router.delete(
-  "/:questionId/:answerId", 
-  auth,               // 1. Authenticate user
-  validateObjectId,   // 2. Validate both :questionId and :answerId formats
-  answerCtrl.deleteAnswer// 3. Execute the controller logic
+  "/:questionId/:answerId",
+  auth, // 1. Authenticate user
+  validateObjectId, // 2. Validate both :questionId and :answerId formats
+  answerCtrl.deleteAnswer // 3. Execute the controller logic
 );
 
 // Export the configured router to be used by the main application (server.js)

@@ -5,10 +5,10 @@ const router = express.Router();
 // Import the controller functions for handling quiz logic
 const quizCtrl = require("../controllers/quizController");
 // Import the authentication middleware to protect all routes within this router
-const auth = require("../middleware/auth");
+const auth = require("../middleware/authMiddleware");
 // Note: You may want to import the validateObjectId middleware here for :id params
 
-/* 
+/*
  * Apply the 'auth' middleware to all subsequent routes defined in this file.
  * Alternatively, you can apply it per route as done below.
  */

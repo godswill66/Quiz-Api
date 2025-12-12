@@ -1,34 +1,26 @@
+// src/config/db.js
+
 const mongoose = require('mongoose');
 
+
 /**
- * Connects to the MongoDB database using the provided connection URI.
- * This function utilizes async/await for cleaner asynchronous handling.
- * 
- * @param {string} uri - The MongoDB connection string (e.g., from process.env.MONGO_URI).
+ * Connects to the MongoDB database using the URI from environment variables.
+ * Exits the process if the URI is missing or the connection fails.
  */
+
 const connectDB = async (uri) => {
   try {
-    // Attempt to connect to the MongoDB cluster using Mongoose's connect method
+    // These options are now default behavior in newer Mongoose versions and should be removed
     await mongoose.connect(uri, {
-      // Use new MongoDB connection string parser to avoid deprecation warnings
-      useNewUrlParser: true,
-      // Use the new server discovery and monitoring engine
-      useUnifiedTopology: true,
+      // useNewUrlParser: true,  <-- Remove this line
+      // useUnifiedTopology: true, <-- Remove this line
     });
-    
-    // Log success message upon successful connection
     console.log('MongoDB connected successfully');
-
   } catch (err) {
-    // Log error details if the connection fails
-    console.error('MongoDB connection error:', err.message);
-    
-    // Exit the process with a failure code (1) to indicate a critical error
+    console.error('MongoDB connection error', err.message);
     process.exit(1);
   }
 };
 
-/**
- * Exports the connectDB function to be used in the main server file (e.g., server.js).
- */
+
 module.exports = connectDB;
