@@ -1,16 +1,12 @@
-// src/middleware/errorHandler.js (Modified to force message display)
-
-
-module.exports = (err, req, res, next) => {
-  // Log the full error to the server console for debugging purposes
+// src/middleware/errorHandler.js
+module.exports = (err, req, res, next) => { // Ensure 'next' is present here!
+  console.error("--- ERROR LOG ---");
   console.error(err); 
 
-  // Ensure the status code is set correctly
   const status = err.statusCode || 500;
-  res.status(status);
   
-  // Send the message and force the stack trace into the response body regardless of NODE_ENV
-  res.json({ 
+  // Use return to ensure the function stops here
+  return res.status(status).json({ 
     message: err.message || 'Internal Server Error',
     stack: err.stack ? err.stack.split('\n') : "Stack trace unavailable"
   });
