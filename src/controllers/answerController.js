@@ -19,8 +19,7 @@ exports.addAnswer = async (req, res) => {
 
     // Find the question and populate its parent quiz data
     // The validateObjectId middleware ensures questionId is valid before this runs
-    const question = await Question.findById(questionId)
-      .populate("quiz");
+    const question = await Question.findById(questionId).populate("quiz");
 
     // Handle case where question does not exist
     if (!question) {
@@ -29,21 +28,22 @@ exports.addAnswer = async (req, res) => {
 
     // Authorization check: ensure the authenticated user owns the parent quiz
     if (question.quiz.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Unauthorized: User does not own this quiz" });
+      return res
+        .status(403)
+        .json({ message: "Unauthorized: User does not own this quiz" });
     }
 
     // Add the new answer object to the embedded document array
     question.answers.push({ text, isCorrect: !!isCorrect });
-    
+
     // Save the parent question document
     await question.save();
 
     // Respond with success message and the updated question object
     res.status(201).json({
       message: "Answer added successfully",
-      question
+      question,
     });
-
   } catch (err) {
     // Generic error handling
     res.status(500).json({ message: "Server error", error: err.message });
@@ -62,8 +62,7 @@ exports.updateAnswer = async (req, res) => {
     const { text, isCorrect } = req.body;
 
     // Find the question and populate its parent quiz data
-    const question = await Question.findById(questionId)
-      .populate("quiz");
+    const question = await Question.findById(questionId).populate("quiz");
 
     if (!question) {
       return res.status(404).json({ message: "Question not found" });
@@ -91,9 +90,8 @@ exports.updateAnswer = async (req, res) => {
     // Respond with success message and the updated question object
     res.json({
       message: "Answer updated successfully",
-      question
+      question,
     });
-
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
@@ -110,8 +108,7 @@ exports.deleteAnswer = async (req, res) => {
     const { questionId, answerId } = req.params;
 
     // Find the question and populate its parent quiz data
-    const question = await Question.findById(questionId)
-      .populate("quiz");
+    const question = await Question.findById(questionId).populate("quiz");
 
     if (!question) {
       return res.status(404).json({ message: "Question not found" });
@@ -129,16 +126,14 @@ exports.deleteAnswer = async (req, res) => {
     }
 
     // Remove the embedded document from the array
-    answer.remove();
-    
+    question.answers.pull(answerId);
     // Save the change to the database
     await question.save();
 
     // Respond with success message (no need to send the full object back for a delete)
     res.json({
-      message: "Answer deleted successfully"
+      message: "Answer deleted successfully",
     });
-
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
