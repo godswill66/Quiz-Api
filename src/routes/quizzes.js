@@ -1,4 +1,4 @@
-// Import the Express library
+const questionCtrl = require("../controllers/questionController"); // Adjust path if needed// Import the Express library
 const express = require("express");
 // Create a new router instance
 const router = express.Router();
@@ -18,8 +18,7 @@ const auth = require("../middleware/authMiddleware");
  * @desc    Create a new quiz
  * @access  Private
  */
-router.post("/", auth, quizCtrl.createQuiz);
-
+router.post("/:id/questions", auth, questionCtrl.createQuestion);
 /**
  * @route   GET /api/quizzes/
  * @desc    Fetch all quizzes belonging to the authenticated user
@@ -51,6 +50,8 @@ router.put("/:id", auth, quizCtrl.updateQuiz);
  */
 router.delete("/:id", auth, quizCtrl.deleteQuiz);
 
+
+router.use('/:id/questions', require('./questions.js'));
 /**
  * @route   PATCH /api/quizzes/:id/archive
  * @desc    Update the status of a quiz to active or archived

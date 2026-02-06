@@ -1,43 +1,34 @@
-// Import the Mongoose Question model for database interactions
 const Question = require("../models/Question");
-// Import the Mongoose Quiz model for database interactions
 const Quiz = require("../models/Quiz");
 
 /**
  * @desc    Create a new question for a specific quiz
- * @route   POST /api/questions/:quizId
- * @access  Private (User must own the quiz)
+ * @route   POST /api/quizzes/:id/questions
  */
 exports.createQuestion = async (req, res) => {
   try {
-    const { quizId } = req.params;
-    const { text, helpText } = req.body;
+    const { text } = req.body;
+    const quizId = req.params.id;
 
-    // The 'validateObjectId' middleware ensures quizId is a valid Mongo ID format.
-
-    // Find the parent quiz document
     const quiz = await Quiz.findById(quizId);
-    if (!quiz) return res.status(404).json({ message: "Quiz not found" });
+    if (!quiz) {
+      return res.status(404).json({ message: "Quiz not found" });
+    }
 
-    // Authorization check: Verify that the authenticated user owns this quiz
-    if (quiz.user.toString() !== req.user._id.toString())
-      return res.status(403).json({ message: "Not allowed: User does not own this resource" });
-
-    // Create the new question document, linking it to the parent quiz ID
-    const question = await Question.create({
+    const question = new Question({
       quiz: quizId,
-      text,
-      helpText,
+      text: text,
+      user: req.user.id
     });
 
-    // Add the new question's ID to the parent quiz's questions array (embedded reference)
-    quiz.questions.push(question._id);
-    await quiz.save(); // Save the updated quiz document
+    await question.save();
 
-    // Respond with created status and the new question data
+    if (!quiz.questions) quiz.questions = [];
+    quiz.questions.push(question._id);
+    await quiz.save();
+
     res.status(201).json({ message: "Question created successfully", question });
   } catch (err) {
-    // Standard server error handling
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
@@ -45,27 +36,22 @@ exports.createQuestion = async (req, res) => {
 /**
  * @desc    Update an existing question
  * @route   PUT /api/questions/:id
- * @access  Private (User must own the quiz the question belongs to)
  */
 exports.updateQuestion = async (req, res) => {
   try {
     const { id } = req.params;
     const { text, helpText } = req.body;
 
-    // Find the question and populate the parent quiz for authorization check
     const question = await Question.findById(id).populate("quiz");
-    if (!question)
-      return res.status(404).json({ message: "Question not found" });
+    if (!question) return res.status(404).json({ message: "Question not found" });
 
-    // Authorization check
-    if (question.quiz.user.toString() !== req.user._id.toString())
-      return res.status(403).json({ message: "Not allowed" });
+    if (question.quiz.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
 
-    // Apply updates only if the fields are provided in the request body
     if (text) question.text = text;
     if (helpText) question.helpText = helpText;
 
-    // Save the updated question document
     await question.save();
     res.json({ message: "Question updated successfully", question });
   } catch (err) {
@@ -76,58 +62,87 @@ exports.updateQuestion = async (req, res) => {
 /**
  * @desc    Delete an existing question
  * @route   DELETE /api/questions/:id
- * @access  Private (User must own the quiz the question belongs to)
  */
 exports.deleteQuestion = async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Find the question and populate the parent quiz for authorization check
     const question = await Question.findById(id).populate("quiz");
-    if (!question)
-      return res.status(404).json({ message: "Question not found" });
 
-    // Authorization check
-    if (question.quiz.user.toString() !== req.user._id.toString())
-      return res.status(403).json({ message: "Not allowed" });
+    if (!question) return res.status(404).json({ message: "Question not found" });
 
-    // Use deleteOne() on the found document to remove it
+    if (question.quiz.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
     await question.deleteOne();
-
     res.json({ message: "Question deleted successfully" });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
-/* --- Answer Management Placeholders (Implementation in previous response) --- */
-
 /**
- * @desc    Add an answer to a question (Placeholder)
- * @route   POST /api/questions/:questionId/answers
- * @access  Private
+ * @desc    Add an answer to a question
+ * @route   POST /api/:id/answers
  */
 exports.addAnswer = async (req, res) => {
-  // Logic for adding an answer belongs here (see previous commented code snippet)
-  res.status(501).json({ message: "Not Implemented Yet" });
+  try {
+    const { id } = req.params;
+    const { text, isCorrect } = req.body;
+
+    const question = await Question.findById(id);
+    if (!question) return res.status(404).json({ message: "Question not found" });
+
+    question.answers.push({ text, isCorrect: isCorrect || false });
+    await question.save();
+
+    res.status(200).json({ message: "Answer added successfully", question });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 };
 
 /**
- * @desc    Update an answer within a question (Placeholder)
- * @route   PUT /api/questions/:questionId/answers/:answerId
- * @access  Private
+ * @desc    Update an answer within a question
+ * @route   PUT /api/:id/answers/:answerId
  */
 exports.updateAnswer = async (req, res) => {
-  // Logic for updating an answer belongs here (see previous commented code snippet)
-  res.status(501).json({ message: "Not Implemented Yet" });
+  try {
+    const { id, answerId } = req.params;
+    const { text, isCorrect } = req.body;
+
+    const question = await Question.findById(id);
+    if (!question) return res.status(404).json({ message: "Question not found" });
+
+    const answer = question.answers.id(answerId);
+    if (!answer) return res.status(404).json({ message: "Answer not found" });
+
+    if (text !== undefined) answer.text = text;
+    if (isCorrect !== undefined) answer.isCorrect = isCorrect;
+
+    await question.save();
+    res.json({ message: "Answer updated successfully", question });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 };
 
 /**
- * @desc    Delete an answer within a question (Placeholder)
- * @route   DELETE /api/questions/:questionId/answers/:answerId
- * @access  Private
+ * @desc    Delete an answer from a question
+ * @route   DELETE /api/:id/answers/:answerId
  */
 exports.deleteAnswer = async (req, res) => {
-  // Logic for deleting an answer belongs here (see previous commented code snippet)
-  res.status(501).json({ message: "Not Implemented Yet" });
+  try {
+    const { id, answerId } = req.params;
+
+    const question = await Question.findById(id);
+    if (!question) return res.status(404).json({ message: "Question not found" });
+
+    question.answers.pull(answerId);
+    await question.save();
+
+    res.json({ message: "Answer deleted successfully", question });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 };

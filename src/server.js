@@ -27,15 +27,19 @@ connectDB(process.env.MONGO_URI); // Use the dedicated connection function
 /* --- Route Definitions --- */
 
 // Define application routes, using paths relative to the server.js file's location (within src)
+/* --- Route Definitions --- */
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/quizzes", require("./routes/quizzes"));
 app.use("/api/results", require("./routes/results"));
-app.use("/api/answer", require("./routes/answer"));
-app.use("/api/questions", require("./routes/questions"));
 
 const quizRoutes = require("./routes/quizzes");
 app.use("/api/quizzes", quizRoutes);
 
 const authRoutes = require("./routes/auth");
 app.use("/api/auth", authRoutes);
+
+// This line makes http://localhost:3001/api/ID/answers possible
+app.use("/api", require("./routes/questions"));
 
 // Test protected route example: demonstrates using the 'authMiddleware'
 app.get("/api/protected", authMiddleware, (req, res) => {
