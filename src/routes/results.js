@@ -12,8 +12,8 @@ const resultCtrl = require("../controllers/resultController");
  * @access  Private
  * Note: Consider adding validateObjectId middleware before resultCtrl.submitQuiz
  */
+// This defines the URL path
 router.post("/:quizId/submit", auth, resultCtrl.submitQuiz);
-
 /**
  * @route   GET /api/results/
  * @desc    Fetch all results for the authenticated user across all quizzes

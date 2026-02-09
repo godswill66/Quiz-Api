@@ -4,35 +4,31 @@ const Quiz = require("../models/Quiz");
 /**
  * @desc    Create a new question for a specific quiz
  * @route   POST /api/quizzes/:id/questions
- */
-exports.createQuestion = async (req, res) => {
+ */exports.createQuestion = async (req, res) => {
   try {
     const { text } = req.body;
     const quizId = req.params.id;
 
-    const quiz = await Quiz.findById(quizId);
-    if (!quiz) {
-      return res.status(404).json({ message: "Quiz not found" });
-    }
-
+    // 1. First, create the question in the database
     const question = new Question({
       quiz: quizId,
       text: text,
       user: req.user.id
     });
-
     await question.save();
 
-    if (!quiz.questions) quiz.questions = [];
-    quiz.questions.push(question._id);
-    await quiz.save();
+    // 2. RIGHT HERE: Update the Quiz to "claim" this question
+    // This adds the question's ID to the Quiz's 'questions' array
+    await Quiz.findByIdAndUpdate(quizId, {
+      $push: { questions: question._id }
+    });
 
-    res.status(201).json({ message: "Question created successfully", question });
+    // 3. Finally, send the success response
+    res.status(201).json({ message: "Question created and linked!", question });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
-
 /**
  * @desc    Update an existing question
  * @route   PUT /api/questions/:id
@@ -42,11 +38,13 @@ exports.updateQuestion = async (req, res) => {
     const { id } = req.params;
     const { text, helpText } = req.body;
 
+    // Find and populate to check user ownership
     const question = await Question.findById(id).populate("quiz");
     if (!question) return res.status(404).json({ message: "Question not found" });
 
-    if (question.quiz.user.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Not authorized" });
+    // Ensure the logged-in user owns the quiz this question belongs to
+    if (question.quiz.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Unauthorized to edit this question" });
     }
 
     if (text) question.text = text;

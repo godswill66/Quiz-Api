@@ -32,6 +32,7 @@ app.use("/api/auth", require("./routes/auth"));
 app.use("/api/quizzes", require("./routes/quizzes"));
 app.use("/api/results", require("./routes/results"));
 
+
 const quizRoutes = require("./routes/quizzes");
 app.use("/api/quizzes", quizRoutes);
 

@@ -9,36 +9,35 @@ const validateObjectId = require("../utils/validateObjectId");
 
 /**
  * @route   POST /api/quizzes/:id/questions
- * NOTE: Changed from "/:quizId" to "/" because the ID is already
- * provided by the parent router (quizzes.js)
+ * Creates a question and links it to the quiz ID provided in the URL
  */
-router.post("/", auth, questionCtrl.createQuestion);
+router.post("/quizzes/:id/questions", auth, validateObjectId, questionCtrl.createQuestion);
 
 /**
  * @route   PUT /api/questions/:id
- * (If you access this directly via /api/questions/:id)
  */
-router.put("/:id", auth, validateObjectId, questionCtrl.updateQuestion);
-router.delete("/:id", auth, validateObjectId, questionCtrl.deleteQuestion);
+router.put("/questions/:id", auth, validateObjectId, questionCtrl.updateQuestion);
+
+/**
+ * @route   DELETE /api/questions/:id
+ */
+router.delete("/questions/:id", auth, validateObjectId, questionCtrl.deleteQuestion);
 
 // --- ANSWERS CRUD ---
+
 /**
- * @route   POST /api/questions/:questionId/answers
- */ // Route: POST /api/:id/answers
-router.post("/:id/answers", auth, questionCtrl.addAnswer);
+ * @route   POST /api/questions/:id/answers
+ */
+router.post("/questions/:id/answers", auth, validateObjectId, questionCtrl.addAnswer);
 
-router.put(
-  "/:questionId/answers/:answerId",
-  auth,
-  validateObjectId,
-  questionCtrl.updateAnswer,
-);
+/**
+ * @route   PUT /api/questions/:id/answers/:answerId
+ */
+router.put("/questions/:id/answers/:answerId", auth, validateObjectId, questionCtrl.updateAnswer);
 
-router.delete(
-  "/:questionId/answers/:answerId",
-  auth,
-  validateObjectId,
-  questionCtrl.deleteAnswer,
-);
+/**
+ * @route   DELETE /api/questions/:id/answers/:answerId
+ */
+router.delete("/questions/:id/answers/:answerId", auth, validateObjectId, questionCtrl.deleteAnswer);
 
 module.exports = router;
