@@ -1,217 +1,60 @@
-src/
- ├── config/
- │    └── db.js
- ├── controllers/
- │    ├── authController.js
- │    ├── quizController.js
- │    ├── questionController.js
- │    ├── answerController.js
- │    └── resultController.js
- ├── middleware/
- │    ├── auth.js
- │    ├── roles.js
- │    └── errorHandler.js
- ├── models/
- │    ├── User.js
- │    ├── Quiz.js
- │    ├── Question.js
- │    ├── Answer.js
- │    └── Result.js
- ├── routes/
- │    ├── auth.js
- │    ├── quizzes.js
- │    ├── questions.js
- │    ├── answers.js
- │    └── results.js
- ├── utils/
- │    └── validateObjectId.js
- └── server.js
+    🎓 Quiz-API EngineA robust, production-ready REST API for managing quizzes, questions, and grading. This project features a sophisticated  scoring engine that handles dynamic relationships between users, quizzes, and multiple-choice questions.
 
+🚀 FeaturesSecure Authentication: JWT-based login and registration.Dynamic Quiz Management: Create, view, update, and archive quizzes.
 
+Linked Question Architecture: Automatically links questions to quizzes using MongoDB $push.
+Grading Engine: Real-time scoring with string comparison, array sorting, and automated grade assignment (A-F).Result Tracking: Persistent storage of user attempts with full quiz metadata population.
 
-📦 Installation
+🛠️ API Documentation🔐 AuthenticationMethodEndpointDescriptionPOST/api/auth/registerRegister a new user account.
 
+POST/api/auth/loginAuthenticate and receive a Bearer Token.📝 Quiz Management (The "Quiz" Logic)Create Quiz (POST /api/quizzes): Initialize a quiz container.
 
-1️⃣ Clone repo
+View All (GET /api/quizzes): Returns a list of all active quizzes.
 
-git clone https://github.com/godswill66/Quiz-Api.git
-cd Quiz-Api
+Get by ID (GET /api/quizzes/:id): Fetches a specific quiz.Note: Uses .
 
-2️⃣ Install dependencies
-npm install
+populate("questions") to resolve Question IDs into full objects.Update Quiz (PUT /api/quizzes/:id): Edit title or description.Delete Quiz (DELETE /api/quizzes/:id): Performs a "Hard Delete" of the quiz and cleans up related questions.
 
+Archive Quiz (PATCH /api/quizzes/:id/archive): Performs a "Soft Delete" by updating the status to archived.❓ Question & Answer ManagementAdd Question (POST /api/quizzes/:id/questions): Creates a question.
 
- 3️⃣ Setup environment variables
+Logic: Automatically updates the parent Quiz model's questions array.Add Answer (POST /api/questions/:id/answers): Adds an option to a question.
 
-Create a .env file:
+Logic: Requires an isCorrect boolean for the grading engine.🏆 Grading & Results (The "Engine" Logic)Submit Quiz (POST /api/results/:quizId/submit):Logic: Maps user answers, sorts arrays for order-independent comparison, and calculates a percentage.
 
-PORT=4000
-MONGO_URI=mongodb://localhost:27017/quiz-api
-JWT_SECRET=your-secret-here
-JWT_EXPIRES_IN=7d
-BCRYPT_SALT_ROUNDS=10
+Grading Scale: Automated assignment based on percentage:$>= 90\%$: A$>= 75\%$: B$>= 60\%$: C$>= 50\%$: D$< 50\%$: FUser History (GET /api/results): Fetches the "Report Card" for the logged-in user.Filtered History (GET /api/results/:quizId): View attempts for one specific quiz.
 
 
-4️⃣ Start server
-npm run dev   # with nodemon
 
 
-🔐 Authentication (JWT)
-Register
-POST /api/auth/register
 
 
-Body:
 
-{
-  "name": "User",
-  "email": "user@test.com",
-  "password": "password123"
-}
 
-Login
-POST /api/auth/login
 
-Returns:
 
-{
-  "token": "JWT_TOKEN",
-  "user": { "id": "...", "email": "..." }
-}
 
-Use Token
-Authorization: Bearer <token>
 
-Create Quiz
-POST /api/quizzes
+                                                  💻 Technical Implementation Details
+Data Integrity Logic
+The project uses a "Bridge" logic to ensure data is never orphaned. When a question is created, it is pushed into the quiz array:
 
 
-Body:
+⚙️ Installation & Setup
+Clone the Repository
 
-{
-  "title": "JavaScript Basics",
-  "description": "Simple JS quiz"
-}
+Install Packages: npm install
 
-Update Quiz
-PUT /api/quizzes/:id
+Environment Setup: Create a .env file with:
 
-Delete Quiz
-DELETE /api/quizzes/:id
+Code snippet
+PORT=3001
+MONGO_URI=your_mongodb_uri
+JWT_SECRET=your_jwt_secret
+Run Server: npm run dev or node src/server.js
 
-Archive/Unarchive Quiz
-PATCH /api/quizzes/:id/archive
+🧪 Testing with Postman
+Auth: Set the "Auth" tab to Bearer Token and paste the token from the login route.
 
+Headers: Ensure Content-Type: application/json is set.
 
-Body:
-
-{ "status": "archived" }
-
-Get all user quizzes
-GET /api/quizzes
-
-Get single quiz (with questions + answers)
-GET /api/quizzes/:id
-
-❓ QUESTION MANAGEMENT
-Add Question
-POST /api/questions/:quizId
-
-
-Body:
-
-{
-  "text": "What is JavaScript?",
-  "helpText": "One correct answer",
-  "type": "single"
-}
-
-Update Question
-PUT /api/questions/:id
-
-Delete Question
-DELETE /api/questions/:id
-
-📝 ANSWER MANAGEMENT
-Add Answer
-POST /api/answers/:questionId
-
-
-Body:
-
-{
-  "text": "A programming language",
-  "isCorrect": true
-}
-
-Update Answer
-PUT /api/answers/:questionId/:answerId
-
-Delete Answer
-DELETE /api/answers/:questionId/:answerId
-
-🧮 QUIZ SUBMISSION & SCORING
-Submit Quiz
-POST /api/results/submit
-
-
-Body example:
-
-{
-  "quizId": "12345",
-  "answers": [
-    {
-      "questionId": "q1",
-      "selectedAnswers": ["Answer Text"]
-    }
-  ]
-}
-
-
-Response:
-
-{
-  "correct_answers": 8,
-  "total_questions": 10,
-  "total_questions_answered": 10,
-  "score_percentage": 80,
-  "grade": "B",
-  "result": { ... }
-}
-
-🛡 Security Features
-
-✔ JWT authentication
-✔ Access control → users manage only their quizzes
-✔ validateObjectId on all routes
-✔ Server-side input validation
-✔ Protected routes
-✔ Prevents cross-user access
-
-🚀 Technologies Used
-
-Node.js
-
-Express.js
-
-MongoDB + Mongoose
-
-JWT
-
-bcryptjs
-
-dotenv
-
-Nodemon
-
-🧪 Testing Tools
-
-Postman collection
-
-MongoDB Compass
-
-Thunder Client (VS Code)
-
-📄 License
-
-MIT License.
+Body: Use the raw JSON format as documented in the routes section.
