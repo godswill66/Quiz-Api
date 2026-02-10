@@ -1,48 +1,44 @@
-                                                       HOW TO USE THIS DOCUMENT
-                   This document serves as a comprehensive guide to the API endpoints for a quiz application. It is organized
+---
+
+## 📄 2. DOC.md
+**The technical "Brains" of the project—perfect for showing off your logic.**
+
+```markdown
+# Technical Documentation & Logic 🧠
+
+## 1. Directory & Execution Logic
+The project follows a modular structure where the entry point is nested in `src/server.js`. 
+
+* **Root-Level Configuration**: `package.json` and `.env` are maintained at the root. 
+* **Path Resolution Logic**: We utilize `path.resolve(__dirname, '../.env')` within `server.js`. This ensures the environment variables are correctly loaded regardless of whether the process is started from the root or the `src` folder.
 
 
 
-🔐 1. Authentication (Auth)
-POST /api/auth/register: Creates a new user.
+## 2. Linux-Production Compatibility
+During deployment on Render (Linux), we addressed **Case-Sensitivity Logic**:
+* **The Problem**: Windows ignores file casing, but Linux fails if casing doesn't match exactly.
+* **The Fix**: The utility `validateObjectId.js` uses strict PascalCase. We utilized `git mv` to force the Git index to recognize casing changes that are normally ignored on Windows.
 
-POST /api/auth/login: Authenticates user and returns a JWT Token.
+## 3. The Backend Engine Logic
 
-Note: This token must be used in the Authorization header for all other routes.
+### A. Authentication Flow
+1. User submits credentials.
+2. **Bcrypt** hashes the password for storage.
+3. Upon login, a **JWT** is issued, which the `authMiddleware` verifies for protected routes.
 
-📝 2. Quiz Management
-POST /api/quizzes: Create a new quiz.
 
-GET /api/quizzes: View All quizzes.
 
-GET /api/quizzes/:id: Get by ID.
+### B. Automated Grading Logic
+When a user submits a quiz:
+1. **Validation**: The `validateObjectId` utility ensures the Quiz ID is a valid MongoDB format.
+2. **Data Aggregation**: The server uses `.populate('questions')` to fetch the correct answers from the database.
+3. **Comparison Engine**: It performs a string match between `userSelectedOption` and the `isCorrect` field in the DB.
+4. **Scoring Algorithm**: 
+   $$Percentage = (\frac{Correct}{Total}) \times 100$$
+5. **Grade Mapping**: The percentage is mapped to a letter grade ($A, B, C, D, F$) and saved to the user's result history.
 
-Logic fixed: Uses .populate("questions") to show full question data.
 
-PUT /api/quizzes/:id: Update quiz metadata (Title, Description).
 
-DELETE /api/quizzes/:id: Delete a quiz and its orphaned questions.
-
-PATCH /api/quizzes/:id/archive: Soft Delete by changing status to "archived".
-
-❓ 3. Question & Answer Logic
-POST /api/quizzes/:id/questions: Create a question and link it to a quiz.
-
-Logic fixed: Uses $push to add the questionId into the Quiz model's questions array.
-
-POST /api/questions/:id/answers: Add an answer to a specific question.
-
-Logic: One answer must have isCorrect: true for the grading engine to work.
-
-🏆 4. Results & Grading Engine
-POST /api/results/:quizId/submit: The core grading logic.
-
-Input: An array of answers containing questionId and selectedAnswers (text).
-
-Logic: Compares user input against the database using JSON.stringify and calculates a percentage.
-
-Output: Returns a Score (0-100) and a Grade (A-F).
-
-GET /api/results: View All results for the logged-in user.
-
-GET /api/results/:quizId: Get by ID (specific results for one quiz).
+## 4. Deployment Logic
+* **Environment Variables**: Sensitive data is injected via Render's dashboard, keeping the `.env` out of version control for security.
+* **Port Allocation**: The server uses `process.env.PORT || 3000` to adapt to Render's dynamic port assignment (typically port 10000).
