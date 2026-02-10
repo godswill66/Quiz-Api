@@ -1,18 +1,10 @@
-// Load environment variables from the .env file immediately upon starting the app
-// Import the path module to handle file paths correctly
 const path = require('path');
-
-// Load environment variables from the .env file located one level up from /src
 require("dotenv").config({ path: path.resolve(__dirname, '../.env') }); 
 
-// Import the Express framework
-const express = require("express");
-// ... the rest of your imports remain the same
-const express = require("express");
-// Import the Mongoose library for MongoDB interaction
+const express = require("express"); // Only ONE of these!
 const mongoose = require("mongoose");
-// Create the Express application instance
 const app = express();
+// ... continue with the rest
 // Import the centralized DB connection function
 const connectDB = require('./config/db'); 
 // Import the error handler middleware
