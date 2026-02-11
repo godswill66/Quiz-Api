@@ -16,27 +16,40 @@ A robust, RESTful API for managing quizzes, user authentication, and automated g
 
 ## 🚀 Getting Started
 
+[LIVE LINK](https://quiz-api-4-z58u.onrender.com)
+
 ### 1. Prerequisites
 * Node.js (v18+)
 * MongoDB Atlas Account
 
 ### 2. Installation
-```bash
-git clone [https://github.com/godswill66/Quiz-Api.git](https://github.com/godswill66/Quiz-Api.git)
-cd Quiz-Api
-npm install
+
+bash
+> git clone
+
+`https://github.com/godswill66/Quiz-Api.git`
+
+> cd Quiz-Api
+
+`npm install`
+
+`MONGO_URI=your_mongodb_connection_string`
+
+`JWT_SECRET=your_secret_key`
+
+`PORT=3000`
+
+>Production/Manual Launch:
+
+`node src/server.js`
 
 
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_secret_key
-PORT=3000
+>Method,Endpoint,Description
 
-Production/Manual Launch:
-node src/server.js
+`POST,/api/auth/register,Register a new user`
 
+`POST,/api/auth/login,Login and receive JWT`
 
-Method,Endpoint,Description
-POST,/api/auth/register,Register a new user
-POST,/api/auth/login,Login and receive JWT
-GET,/api/quizzes,Fetch all available quizzes
-POST,/api/results/:quizId/submit,Submit answers and get grade
+`GET,/api/quizzes,Fetch all available quizzes`
+
+`POST,/api/results/:quizId/submit,Submit answers and get grade`
